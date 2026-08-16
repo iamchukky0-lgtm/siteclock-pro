@@ -40,7 +40,7 @@ const iconSite = new L.Icon({
   shadowSize: [41, 41],
 })
 
-type Record = {
+type AttRecord = {
   id: string
   workerName: string
   workerId: string
@@ -64,7 +64,7 @@ function FitBounds({
   records,
   sites,
 }: {
-  records: Record[]
+  records: AttRecord[]
   sites: Site[]
 }) {
   const map = useMap()
@@ -91,7 +91,7 @@ export default function AttendanceMapInner({
   records,
   sites,
 }: {
-  records: Record[]
+  records: AttRecord[]
   sites: Site[]
 }) {
   const center: [number, number] = useMemo(() => {

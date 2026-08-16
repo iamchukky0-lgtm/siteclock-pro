@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { authApi, attendanceApi, workersApi, sitesApi } from "@/lib/api"
 
-type Record = {
+type AttRecord = {
   id: string
   workerId: string
   workerName: string
@@ -42,7 +42,7 @@ function today() {
 
 export default function AttendanceReportsPage() {
   const router = useRouter()
-  const [records, setRecords] = useState<Record[]>([])
+  const [records, setRecords] = useState<AttRecord[]>([])
   const [workers, setWorkers] = useState<Worker[]>([])
   const [sites, setSites] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -215,13 +215,13 @@ export default function AttendanceReportsPage() {
         <div className="max-w-6xl mx-auto px-4 py-4 flex flex-wrap items-center justify-between gap-3">
           <div>
             <Link href="/admin" className="text-sm text-slate-400 hover:text-white">
-              ← Dashboard
+              ← Back
             </Link>
             <h1 className="text-xl font-bold mt-1">Attendance & Payroll</h1>
           </div>
           <button
             onClick={exportCSV}
-            className="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold px-4 py-2 rounded-lg transition"
+            className="bg-orange-500 hover:bg-orange-600 text-white font-semibold px-4 py-2 rounded-lg transition"
           >
             Export CSV
           </button>
@@ -296,7 +296,7 @@ export default function AttendanceReportsPage() {
             onClick={() => setView("records")}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
               view === "records"
-                ? "bg-emerald-600 text-white"
+                ? "bg-orange-500 text-white"
                 : "bg-slate-800 text-slate-400"
             }`}
           >
@@ -306,7 +306,7 @@ export default function AttendanceReportsPage() {
             onClick={() => setView("payroll")}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
               view === "payroll"
-                ? "bg-emerald-600 text-white"
+                ? "bg-orange-500 text-white"
                 : "bg-slate-800 text-slate-400"
             }`}
           >

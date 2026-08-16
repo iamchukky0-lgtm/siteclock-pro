@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import dynamic from "next/dynamic"
 
-type Record = {
+type AttRecord = {
   id: string
   workerName: string
   workerId: string
@@ -24,7 +24,7 @@ type Site = {
 }
 
 type Props = {
-  records: Record[]
+  records: AttRecord[]
   sites: Site[]
 }
 
