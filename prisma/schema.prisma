@@ -1,0 +1,99 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Admin {
+  id                  String   @id @default(cuid())
+  fullName            String
+  email               String   @unique
+  passwordHash        String
+  role                String   @default("supervisor") // supervisor | payroll_manager
+  isGlobalAdmin       Boolean  @default(false)
+  isPayrollManager    Boolean  @default(false)
+  assignedSiteIds     String   @default("[]") // JSON array of site IDs
+  mustChangePassword  Boolean  @default(false)
+  isActive            Boolean  @default(true)
+  phoneNumber         String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+}
+
+model Site {
+  id                           String   @id @default(cuid())
+  siteName                     String
+  address                      String?
+  latitude                     Float?
+  longitude                    Float?
+  radiusMetres                 Int      @default(250)
+  isActive                     Boolean  @default(true)
+  createdBy                    String?
+  whatsappNotificationsEnabled Boolean  @default(false)
+  createdAt                    DateTime @default(now())
+  updatedAt                    DateTime @updatedAt
+
+  workers              Worker[]
+  attendanceRecords    AttendanceRecord[]
+}
+
+model Worker {
+  id                    String   @id @default(cuid())
+  fullName              String
+  workerId              String   @unique // human readable ID
+  phoneNumber           String?
+  pin                   String   // 4-digit PIN
+  profilePhotoUrl       String?
+  status                String   @default("active") // active | inactive
+  trade                 String?
+  siteId                String?
+  idNumber              String?
+  residentialAddress    String?
+  nextOfKinName         String?
+  nextOfKinPhone        String?
+  nextOfKinRelationship String?
+  hasWorkPermit         Boolean  @default(false)
+  workPermitPhotoUrl    String?
+  idDocumentUrl         String?
+  weekdayDailyRate      Float?
+  overtimeHourlyRate    Float?
+  saturdayDailyRate     Float?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  site                 Site?               @relation(fields: [siteId], references: [id])
+  attendanceRecords    AttendanceRecord[]
+}
+
+model AttendanceRecord {
+  id                  String   @id @default(cuid())
+  workerId            String   // the human readable worker_id
+  workerDbId          String?  // the actual Worker.id (cuid)
+  workerName          String
+  siteId              String?
+  type                String   // in | out | absent
+  timestamp           DateTime
+  selfieUrl           String?
+  latitude            Float?
+  longitude           Float?
+  faceMatchConfidence Float?
+  status              String   @default("verified") // verified | pending_review | rejected | supervisor_override | absent
+  overrideNote        String?
+  distanceFromSite    Float?
+  absenceReason       String?  // Sick | Unpaid Leave | No-Show | Other
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  worker              Worker?  @relation(fields: [workerDbId], references: [id])
+  site                Site?    @relation(fields: [siteId], references: [id])
+}
+
+model AppSetting {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String
+  updatedAt DateTime @updatedAt
+}
