@@ -183,7 +183,7 @@ export default function WorkerClockPage() {
 
     // Online: try server, fall back to queue on network error
     try {
-      const record = await attendanceApi.create(payload)
+      const record = await attendanceApi.create(payload) as { timestamp: string }
       setStatus("success")
       setMessage(
         `Successfully clocked ${type.toUpperCase()} at ${new Date(
