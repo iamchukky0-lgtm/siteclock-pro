@@ -1,5 +1,12 @@
 import { NextRequest, NextResponse } from "next/server"
-import { loginAdmin } from "@/lib/auth"
+import { SignJWT } from "jose"
+import bcrypt from "bcryptjs"
+import prisma from "@/lib/db"
+
+const JWT_SECRET = new TextEncoder().encode(
+  process.env.JWT_SECRET || "siteclock-pro-dev-secret"
+)
+const COOKIE_NAME = "siteclock_admin_token"
 
 export async function POST(req: NextRequest) {
   try {
@@ -13,27 +20,74 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    const result = await loginAdmin(email, password)
-
-    if ("error" in result) {
-      return NextResponse.json({ error: result.error }, { status: 401 })
+    const admin = await prisma.admin.findUnique({ where: { email } })
+    if (!admin || !admin.isActive) {
+      return NextResponse.json(
+        { error: "Invalid email or password" },
+        { status: 401 }
+      )
     }
 
-    return NextResponse.json({
+    const valid = await bcrypt.compare(password, admin.passwordHash)
+    if (!valid) {
+      return NextResponse.json(
+        { error: "Invalid email or password" },
+        { status: 401 }
+      )
+    }
+
+    let assignedSiteIds: string[] | null = null
+    try {
+      assignedSiteIds = JSON.parse(admin.assignedSiteIds || "[]")
+      if (Array.isArray(assignedSiteIds) && assignedSiteIds.length === 0) {
+        assignedSiteIds = null
+      }
+    } catch {
+      assignedSiteIds = null
+    }
+
+    const session = {
+      adminId: admin.id,
+      email: admin.email,
+      fullName: admin.fullName,
+      isGlobalAdmin: admin.isGlobalAdmin,
+      isPayrollManager: admin.isPayrollManager || admin.isGlobalAdmin,
+      assignedSiteIds: admin.isGlobalAdmin ? null : assignedSiteIds,
+      phoneNumber: admin.phoneNumber,
+    }
+
+    const token = await new SignJWT({ ...session })
+      .setProtectedHeader({ alg: "HS256" })
+      .setIssuedAt()
+      .setExpirationTime("7d")
+      .sign(JWT_SECRET)
+
+    const response = NextResponse.json({
       success: true,
       admin: {
-        id: result.session.adminId,
-        email: result.session.email,
-        fullName: result.session.fullName,
-        isGlobalAdmin: result.session.isGlobalAdmin,
-        isPayrollManager: result.session.isPayrollManager,
+        id: session.adminId,
+        email: session.email,
+        fullName: session.fullName,
+        isGlobalAdmin: session.isGlobalAdmin,
+        isPayrollManager: session.isPayrollManager,
       },
-      mustChangePassword: result.mustChangePassword,
+      mustChangePassword: admin.mustChangePassword,
     })
-  } catch (error) {
+
+    // Set cookie on the response (reliable in production)
+    response.cookies.set(COOKIE_NAME, token, {
+      httpOnly: true,
+      secure: true,
+      sameSite: "lax",
+      maxAge: 60 * 60 * 24 * 7,
+      path: "/",
+    })
+
+    return response
+  } catch (error: any) {
     console.error("Login error:", error)
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: error?.message || "Internal server error" },
       { status: 500 }
     )
   }
