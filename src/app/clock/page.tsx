@@ -154,6 +154,12 @@ export default function WorkerClockPage() {
       setStatus("error")
       return
     }
+    if (!selfieDataUrl) {
+      setMessage("Selfie required for verification — open Selfie tab and capture a photo")
+      setStatus("error")
+      setMode("selfie")
+      return
+    }
 
     setStatus("loading")
     setMessage("")
@@ -366,7 +372,7 @@ export default function WorkerClockPage() {
                 </div>
               )}
               <p className="text-center text-xs text-slate-500">
-                Selfie is optional but recommended
+                Selfie is required for clock in and clock out
               </p>
             </div>
           )}
@@ -441,7 +447,7 @@ export default function WorkerClockPage() {
         </div>
 
         <p className="text-center text-xs text-slate-500">
-          Works offline — records sync when internet returns.
+          Selfie required · Works offline · Syncs when online
           <br />
           Demo worker: W001 / PIN 1234
         </p>

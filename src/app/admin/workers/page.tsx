@@ -56,8 +56,8 @@ export default function WorkersPage() {
   const [form, setForm] = useState({ ...emptyForm })
   const [error, setError] = useState("")
   const [saving, setSaving] = useState(false)
-  const [filter, setFilter] = useState<"all" | "active" | "inactive">("active")
   const [qrWorker, setQrWorker] = useState<Worker | null>(null)
+  const [filter, setFilter] = useState<"all" | "active" | "inactive">("active")
 
   async function load() {
     try {
@@ -185,13 +185,13 @@ export default function WorkersPage() {
         <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
           <div>
             <Link href="/admin" className="text-sm text-slate-400 hover:text-white">
-              ← Dashboard
+              ← Back
             </Link>
             <h1 className="text-xl font-bold mt-1">Worker Management</h1>
           </div>
           <button
             onClick={openCreate}
-            className="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold px-4 py-2 rounded-lg transition"
+            className="bg-orange-500 hover:bg-orange-600 text-white font-semibold px-4 py-2 rounded-lg transition"
           >
             + Add Worker
           </button>
@@ -207,7 +207,7 @@ export default function WorkersPage() {
               onClick={() => setFilter(f)}
               className={`px-3 py-1.5 rounded-lg text-sm capitalize transition ${
                 filter === f
-                  ? "bg-emerald-600 text-white"
+                  ? "bg-orange-500 text-white"
                   : "bg-slate-800 text-slate-400 hover:text-white"
               }`}
             >
@@ -216,44 +216,32 @@ export default function WorkersPage() {
           ))}
         </div>
 
-        {/* Table */}
-        <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
-          <table className="w-full text-sm">
-            <thead className="bg-slate-800/60 text-slate-400">
-              <tr>
-                <th className="text-left px-4 py-3">Name</th>
-                <th className="text-left px-4 py-3">ID</th>
-                <th className="text-left px-4 py-3">Trade</th>
-                <th className="text-left px-4 py-3">Site</th>
-                <th className="text-left px-4 py-3">Daily Rate</th>
-                <th className="text-left px-4 py-3">Status</th>
-                <th className="text-right px-4 py-3">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="px-4 py-8 text-center text-slate-500">
-                    No workers found
-                  </td>
-                </tr>
-              ) : (
-                filtered.map((w) => (
-                  <tr key={w.id} className="border-t border-slate-800 hover:bg-slate-800/30">
-                    <td className="px-4 py-3 font-medium">{w.fullName}</td>
-                    <td className="px-4 py-3 font-mono text-slate-300">{w.workerId}</td>
-                    <td className="px-4 py-3 text-slate-400">{w.trade || "—"}</td>
-                    <td className="px-4 py-3 text-slate-400">
-                      {w.site?.siteName || "—"}
-                    </td>
-                    <td className="px-4 py-3">
-                      {w.weekdayDailyRate != null
-                        ? `R${w.weekdayDailyRate}`
-                        : "—"}
-                    </td>
-                    <td className="px-4 py-3">
+        {/* Worker cards */}
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {filtered.length === 0 ? (
+            <div className="col-span-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-12 text-center text-slate-500">
+              No workers found
+            </div>
+          ) : (
+            filtered.map((w) => (
+              <div
+                key={w.id}
+                className="bg-slate-900 border border-slate-800 rounded-xl p-4 space-y-3"
+              >
+                <div className="flex items-start gap-3">
+                  <div className="w-11 h-11 rounded-full bg-orange-500/20 text-orange-400 flex items-center justify-center font-bold text-sm shrink-0">
+                    {(w.fullName || "?")
+                      .split(" ")
+                      .map((n) => n[0])
+                      .join("")
+                      .slice(0, 2)
+                      .toUpperCase()}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="font-semibold text-white truncate">{w.fullName}</p>
                       <span
-                        className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${
+                        className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${
                           w.status === "active"
                             ? "bg-emerald-900/50 text-emerald-300"
                             : "bg-slate-700 text-slate-400"
@@ -261,40 +249,52 @@ export default function WorkersPage() {
                       >
                         {w.status}
                       </span>
-                    </td>
-                    <td className="px-4 py-3 text-right space-x-2">
-                      <button
-                        onClick={() => setQrWorker(w)}
-                        className="text-sky-400 hover:text-sky-300 text-sm"
-                      >
-                        QR
-                      </button>
-                      <button
-                        onClick={() => openEdit(w)}
-                        className="text-emerald-400 hover:text-emerald-300 text-sm"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => toggleStatus(w)}
-                        className="text-amber-400 hover:text-amber-300 text-sm"
-                      >
-                        {w.status === "active" ? "Deactivate" : "Activate"}
-                      </button>
-                      <button
-                        onClick={() => handleDelete(w.id, w.fullName)}
-                        className="text-red-400 hover:text-red-300 text-sm"
-                      >
-                        Delete
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+                    </div>
+                    <p className="text-xs text-slate-500 font-mono mt-0.5">
+                      {w.workerId}
+                      {w.trade ? ` · ${w.trade}` : ""}
+                    </p>
+                    <p className="text-xs text-slate-600 mt-0.5">
+                      {w.site?.siteName || "No site"}
+                      {w.weekdayDailyRate != null
+                        ? ` · R${w.weekdayDailyRate}/day`
+                        : ""}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  <button
+                    onClick={() => setQrWorker(w)}
+                    className="text-xs px-2.5 py-1.5 rounded-lg border border-slate-700 text-sky-400 hover:bg-slate-800"
+                  >
+                    QR
+                  </button>
+                  <button
+                    onClick={() => openEdit(w)}
+                    className="text-xs px-2.5 py-1.5 rounded-lg border border-slate-700 text-emerald-400 hover:bg-slate-800"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => toggleStatus(w)}
+                    className="text-xs px-2.5 py-1.5 rounded-lg border border-slate-700 text-amber-400 hover:bg-slate-800"
+                  >
+                    {w.status === "active" ? "Deactivate" : "Activate"}
+                  </button>
+                  <button
+                    onClick={() => handleDelete(w.id, w.fullName)}
+                    className="text-xs px-2.5 py-1.5 rounded-lg border border-slate-700 text-red-400 hover:bg-slate-800"
+                  >
+                    Delete
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
         </div>
+
       </main>
+
 
       {/* QR Modal */}
       {qrWorker && (
@@ -389,7 +389,7 @@ export default function WorkersPage() {
                     <select
                       value={form.siteId}
                       onChange={(e) => setForm({ ...form, siteId: e.target.value })}
-                      className="w-full rounded-lg bg-slate-800 border border-slate-700 px-3 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      className="w-full rounded-lg bg-slate-800 border border-slate-700 px-3 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
                     >
                       <option value="">— No site —</option>
                       {sites.map((s) => (
@@ -488,7 +488,7 @@ export default function WorkersPage() {
                   <select
                     value={form.status}
                     onChange={(e) => setForm({ ...form, status: e.target.value })}
-                    className="w-full rounded-lg bg-slate-800 border border-slate-700 px-3 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    className="w-full rounded-lg bg-slate-800 border border-slate-700 px-3 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
                   >
                     <option value="active">Active</option>
                     <option value="inactive">Inactive</option>
@@ -507,7 +507,7 @@ export default function WorkersPage() {
                 <button
                   type="submit"
                   disabled={saving}
-                  className="flex-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-semibold py-3 transition"
+                  className="flex-1 rounded-lg bg-orange-500 hover:bg-orange-600 disabled:opacity-50 text-white font-semibold py-3 transition"
                 >
                   {saving ? "Saving..." : editingId ? "Update Worker" : "Create Worker"}
                 </button>
@@ -544,7 +544,7 @@ function Field({
         onChange={(e) => onChange(e.target.value)}
         required={required}
         placeholder={placeholder}
-        className="w-full rounded-lg bg-slate-800 border border-slate-700 px-3 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+        className="w-full rounded-lg bg-slate-800 border border-slate-700 px-3 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
       />
     </div>
   )
