@@ -220,7 +220,7 @@ export default function WorkerClockPage() {
   }
 
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center p-4 bg-[#0b1220]">
+    <main className="min-h-screen min-h-[100dvh] flex flex-col items-center justify-center p-4 pb-8 bg-[#0b1220] overflow-x-hidden">
       <div className="w-full max-w-sm space-y-5">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-white">Clock In / Out</h1>
