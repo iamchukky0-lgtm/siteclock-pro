@@ -17,6 +17,7 @@ export type AdminSession = {
   isPayrollManager: boolean
   assignedSiteIds: string[] | null
   phoneNumber?: string | null
+  companyId?: string | null
 }
 
 export async function hashPassword(password: string): Promise<string> {
@@ -110,6 +111,7 @@ export async function loginAdmin(email: string, password: string) {
     isPayrollManager: admin.isPayrollManager || admin.isGlobalAdmin,
     assignedSiteIds: admin.isGlobalAdmin ? null : assignedSiteIds,
     phoneNumber: admin.phoneNumber,
+    companyId: admin.companyId || null,
   }
 
   const token = await createAdminToken(session)
