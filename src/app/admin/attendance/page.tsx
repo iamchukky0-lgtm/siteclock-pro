@@ -53,6 +53,17 @@ export default function AttendanceReportsPage() {
   const [siteId, setSiteId] = useState("")
   const [workerId, setWorkerId] = useState("")
   const [view, setView] = useState<"records" | "payroll">("records")
+  const [editRecord, setEditRecord] = useState<AttRecord | null>(null)
+  const [editDate, setEditDate] = useState("")
+  const [editTime, setEditTime] = useState("")
+  const [editType, setEditType] = useState("in")
+  const [editNote, setEditNote] = useState("")
+  const [editSaving, setEditSaving] = useState(false)
+  const [editError, setEditError] = useState("")
+  const [editingRecord, setEditingRecord] = useState<AttRecord | null>(null)
+  const [editForm, setEditForm] = useState({ date: "", time: "", type: "in", note: "" })
+  const [editSaving, setEditSaving] = useState(false)
+  const [editError, setEditError] = useState("")
 
   async function load() {
     setLoading(true)
@@ -138,7 +149,54 @@ export default function AttendanceReportsPage() {
     return Object.values(map).sort((a, b) => a.name.localeCompare(b.name))
   }, [records, workers])
 
-  function exportCSV() {
+
+  function openEditRecord(r: AttRecord) {
+    const d = new Date(r.timestamp)
+    const date = d.toISOString().slice(0, 10)
+    const time = d.toTimeString().slice(0, 5)
+    setEditForm({
+      date,
+      time,
+      type: r.type,
+      note: r.overrideNote || r.absenceReason || "",
+    })
+    setEditError("")
+    setEditingRecord(r)
+  }
+
+  async function saveEditRecord(e: React.FormEvent) {
+    e.preventDefault()
+    if (!editingRecord) return
+    setEditSaving(true)
+    setEditError("")
+    try {
+      const timestamp = new Date(`${editForm.date}T${editForm.time}:00`)
+      await attendanceApi.update(editingRecord.id, {
+        timestamp: timestamp.toISOString(),
+        type: editForm.type,
+        overrideNote: editForm.note || "Time adjusted by supervisor",
+        status: "supervisor_override",
+      })
+      setEditingRecord(null)
+      await load()
+    } catch (err: any) {
+      setEditError(err.message || "Update failed")
+    } finally {
+      setEditSaving(false)
+    }
+  }
+
+  async function deleteRecord(id: string) {
+    if (!confirm("Delete this attendance record?")) return
+    try {
+      await attendanceApi.delete(id)
+      await load()
+    } catch (err: any) {
+      alert(err.message)
+    }
+  }
+
+    function exportCSV() {
     if (view === "payroll") {
       const headers = [
         "Worker ID",
@@ -328,12 +386,13 @@ export default function AttendanceReportsPage() {
                   <th className="text-left px-4 py-3">Type</th>
                   <th className="text-left px-4 py-3">Status</th>
                   <th className="text-left px-4 py-3">Note</th>
+                  <th className="text-right px-4 py-3">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {records.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="px-4 py-8 text-center text-slate-500">
+                    <td colSpan={7} className="px-4 py-8 text-center text-slate-500">
                       No records in this period
                     </td>
                   </tr>
@@ -368,6 +427,20 @@ export default function AttendanceReportsPage() {
                         </td>
                         <td className="px-4 py-3 text-slate-500 text-xs">
                           {r.absenceReason || r.overrideNote || "—"}
+                        </td>
+                        <td className="px-4 py-3 text-right space-x-2 whitespace-nowrap">
+                          <button
+                            onClick={() => openEditRecord(r)}
+                            className="text-orange-400 hover:text-orange-300 text-sm"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => deleteRecord(r.id)}
+                            className="text-red-400 hover:text-red-300 text-sm"
+                          >
+                            Delete
+                          </button>
                         </td>
                       </tr>
                     )
@@ -413,7 +486,7 @@ export default function AttendanceReportsPage() {
                 <tbody>
                   {payroll.length === 0 ? (
                     <tr>
-                      <td colSpan={6} className="px-4 py-8 text-center text-slate-500">
+                      <td colSpan={7} className="px-4 py-8 text-center text-slate-500">
                         No payroll data for this period
                       </td>
                     </tr>
@@ -451,6 +524,79 @@ export default function AttendanceReportsPage() {
           </div>
         )}
       </main>
+
+      {editingRecord && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50">
+          <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-md p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-bold">Edit Attendance</h2>
+              <button onClick={() => setEditingRecord(null)} className="text-slate-400 text-xl">×</button>
+            </div>
+            <p className="text-sm text-slate-400">
+              {editingRecord.workerName} ({editingRecord.workerId})
+            </p>
+            {editError && (
+              <div className="bg-red-900/40 border border-red-700 text-red-200 text-sm rounded-lg px-3 py-2">
+                {editError}
+              </div>
+            )}
+            <form onSubmit={saveEditRecord} className="space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs text-slate-400 mb-1">Date</label>
+                  <input
+                    type="date"
+                    value={editForm.date}
+                    onChange={(e) => setEditForm({ ...editForm, date: e.target.value })}
+                    required
+                    className="w-full rounded-lg bg-slate-800 border border-slate-700 px-3 py-2 text-white text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-slate-400 mb-1">Time</label>
+                  <input
+                    type="time"
+                    value={editForm.time}
+                    onChange={(e) => setEditForm({ ...editForm, time: e.target.value })}
+                    required
+                    className="w-full rounded-lg bg-slate-800 border border-slate-700 px-3 py-2 text-white text-sm"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs text-slate-400 mb-1">Type</label>
+                <select
+                  value={editForm.type}
+                  onChange={(e) => setEditForm({ ...editForm, type: e.target.value })}
+                  className="w-full rounded-lg bg-slate-800 border border-slate-700 px-3 py-2 text-white text-sm"
+                >
+                  <option value="in">Clock In</option>
+                  <option value="out">Clock Out</option>
+                  <option value="absent">Absent</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs text-slate-400 mb-1">Note</label>
+                <input
+                  value={editForm.note}
+                  onChange={(e) => setEditForm({ ...editForm, note: e.target.value })}
+                  className="w-full rounded-lg bg-slate-800 border border-slate-700 px-3 py-2 text-white text-sm"
+                  placeholder="Reason for change"
+                />
+              </div>
+              <div className="flex gap-2 pt-2">
+                <button type="button" onClick={() => setEditingRecord(null)} className="flex-1 border border-slate-700 rounded-lg py-2.5 text-slate-300">
+                  Cancel
+                </button>
+                <button type="submit" disabled={editSaving} className="flex-1 bg-orange-500 hover:bg-orange-600 rounded-lg py-2.5 text-white font-semibold disabled:opacity-50">
+                  {editSaving ? "Saving..." : "Save"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
     </div>
   )
 }
