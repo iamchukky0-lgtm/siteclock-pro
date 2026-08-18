@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import prisma from "@/lib/db"
 import { getAdminSession } from "@/lib/auth"
+import { companyWhere, resolveCompanyId } from "@/lib/companyScope"
 
 export async function GET(req: NextRequest) {
   try {
@@ -9,11 +10,12 @@ export async function GET(req: NextRequest) {
     const status = searchParams.get("status") || "active"
     const siteId = searchParams.get("siteId")
 
-    const where: any = {}
+    const where: any = {
+      ...(session ? companyWhere(session) : {}),
+    }
     if (status !== "all") where.status = status
     if (siteId) where.siteId = siteId
 
-    // If admin is site-restricted, filter
     if (session && !session.isGlobalAdmin && session.assignedSiteIds) {
       where.siteId = { in: session.assignedSiteIds }
     }
@@ -39,6 +41,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json()
+    const companyId = resolveCompanyId(session, body.companyId)
     const {
       fullName,
       workerId,
@@ -74,6 +77,7 @@ export async function POST(req: NextRequest) {
 
     const worker = await prisma.worker.create({
       data: {
+        companyId,
         fullName,
         workerId,
         phoneNumber,

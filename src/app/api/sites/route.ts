@@ -1,17 +1,24 @@
 import { NextRequest, NextResponse } from "next/server"
 import prisma from "@/lib/db"
 import { getAdminSession } from "@/lib/auth"
+import { companyWhere, resolveCompanyId } from "@/lib/companyScope"
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
     const session = await getAdminSession()
+    const { searchParams } = new URL(req.url)
+    const all = searchParams.get("all") === "true"
+
+    const where: any = {
+      ...(all ? {} : { isActive: true }),
+      ...(session ? companyWhere(session) : {}),
+    }
 
     let sites = await prisma.site.findMany({
-      where: { isActive: true },
+      where,
       orderBy: { siteName: "asc" },
     })
 
-    // Restrict non-global admins
     if (session && !session.isGlobalAdmin && session.assignedSiteIds) {
       sites = sites.filter((s) => session.assignedSiteIds!.includes(s.id))
     }
@@ -26,34 +33,24 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   try {
     const session = await getAdminSession()
-    if (!session || !session.isGlobalAdmin) {
+    if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
     const body = await req.json()
-    const {
-      siteName,
-      address,
-      latitude,
-      longitude,
-      radiusMetres = 250,
-      whatsappNotificationsEnabled = false,
-    } = body
-
-    if (!siteName) {
-      return NextResponse.json({ error: "siteName is required" }, { status: 400 })
-    }
+    const companyId = resolveCompanyId(session, body.companyId)
 
     const site = await prisma.site.create({
       data: {
-        siteName,
-        address,
-        latitude: latitude ? Number(latitude) : null,
-        longitude: longitude ? Number(longitude) : null,
-        radiusMetres: Number(radiusMetres) || 250,
-        whatsappNotificationsEnabled: !!whatsappNotificationsEnabled,
+        siteName: body.siteName,
+        address: body.address || null,
+        latitude: body.latitude != null ? Number(body.latitude) : null,
+        longitude: body.longitude != null ? Number(body.longitude) : null,
+        radiusMetres: body.radiusMetres != null ? Number(body.radiusMetres) : 250,
+        isActive: body.isActive !== false,
+        whatsappNotificationsEnabled: !!body.whatsappNotificationsEnabled,
         createdBy: session.email,
-        isActive: true,
+        companyId,
       },
     })
 

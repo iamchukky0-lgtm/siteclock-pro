@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import prisma from "@/lib/db"
 import { getAdminSession, hashPassword } from "@/lib/auth"
+import { resolveCompanyId } from "@/lib/companyScope"
 
 export async function GET() {
   try {
@@ -67,6 +68,7 @@ export async function POST(req: NextRequest) {
       isPayrollManager = false,
       assignedSiteIds = [],
       phoneNumber,
+      companyId: bodyCompanyId,
     } = body
 
     if (!fullName || !email || !password) {
@@ -82,6 +84,7 @@ export async function POST(req: NextRequest) {
     }
 
     const passwordHash = await hashPassword(password)
+    const companyId = resolveCompanyId(session, bodyCompanyId)
 
     const admin = await prisma.admin.create({
       data: {
@@ -93,6 +96,7 @@ export async function POST(req: NextRequest) {
         isPayrollManager: !!isPayrollManager || !!isGlobalAdmin,
         assignedSiteIds: JSON.stringify(assignedSiteIds || []),
         phoneNumber: phoneNumber || null,
+        companyId,
         isActive: true,
         mustChangePassword: true,
       },

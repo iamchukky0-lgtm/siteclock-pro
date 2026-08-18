@@ -54,6 +54,7 @@ export async function POST(req: NextRequest) {
       isPayrollManager: admin.isPayrollManager || admin.isGlobalAdmin,
       assignedSiteIds: admin.isGlobalAdmin ? null : assignedSiteIds,
       phoneNumber: admin.phoneNumber,
+      companyId: (admin as any).companyId || null,
     }
 
     const token = await new SignJWT({ ...session })

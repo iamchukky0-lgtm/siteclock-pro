@@ -7,6 +7,18 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model Company {
+  id        String   @id @default(cuid())
+  name      String
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  admins  Admin[]
+  sites   Site[]
+  workers Worker[]
+}
+
 model Admin {
   id                  String   @id @default(cuid())
   fullName            String
@@ -19,8 +31,11 @@ model Admin {
   mustChangePassword  Boolean  @default(false)
   isActive            Boolean  @default(true)
   phoneNumber         String?
+  companyId           String?
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
+
+  company Company? @relation(fields: [companyId], references: [id])
 }
 
 model Site {
@@ -33,9 +48,11 @@ model Site {
   isActive                     Boolean  @default(true)
   createdBy                    String?
   whatsappNotificationsEnabled Boolean  @default(false)
+  companyId                    String?
   createdAt                    DateTime @default(now())
   updatedAt                    DateTime @updatedAt
 
+  company              Company?            @relation(fields: [companyId], references: [id])
   workers              Worker[]
   attendanceRecords    AttendanceRecord[]
 }
@@ -50,6 +67,7 @@ model Worker {
   status                String   @default("active") // active | inactive
   trade                 String?
   siteId                String?
+  companyId             String?
   idNumber              String?
   residentialAddress    String?
   nextOfKinName         String?
@@ -64,6 +82,7 @@ model Worker {
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
 
+  company              Company?            @relation(fields: [companyId], references: [id])
   site                 Site?               @relation(fields: [siteId], references: [id])
   attendanceRecords    AttendanceRecord[]
 }
